@@ -84,15 +84,9 @@ tbody tr:hover { background:rgba(59,130,246,.06); }
       <button class="dim-btn" data-dim="daily">当日</button>
     </div>
     <div id="overviewKpi" class="kpi-row"></div>
-    <div class="chart-row">
-      <div class="chart-box">
-        <div class="chart-title" id="overviewChart1Title">各区域月度达成率</div>
-        <div class="chart-wrap" id="overviewChart1"></div>
-      </div>
-      <div class="chart-box">
-        <div class="chart-title" id="overviewChart2Title">各区域月度目标与实际</div>
-        <div class="chart-wrap" id="overviewChart2"></div>
-      </div>
+    <div class="chart-box">
+      <div class="chart-title" id="overviewChart1Title">各区域激励金对比</div>
+      <div class="chart-wrap" id="overviewChart1"></div>
     </div>
   </div>
 
@@ -104,16 +98,6 @@ tbody tr:hover { background:rgba(59,130,246,.06); }
       <button class="dim-btn" data-dim="daily">当日</button>
     </div>
     <div id="regionKpi" class="kpi-row"></div>
-    <div class="chart-row">
-      <div class="chart-box">
-        <div class="chart-title" id="regionChart1Title">区域达成率对比</div>
-        <div class="chart-wrap" id="regionChart1"></div>
-      </div>
-      <div class="chart-box">
-        <div class="chart-title" id="regionChart2Title">区域激励金额</div>
-        <div class="chart-wrap" id="regionChart2"></div>
-      </div>
-    </div>
   </div>
 
   <!-- Section 3: 门店明细 -->
@@ -165,7 +149,7 @@ function initDashboard() {
   document.getElementById('updateTime').textContent = '数据更新时间：' + m.updateTime;
 
   // Init charts
-  ['overviewChart1','overviewChart2','regionChart1','regionChart2'].forEach(id => {
+  ['overviewChart1'].forEach(id => {
     charts[id] = echarts.init(document.getElementById(id));
   });
 
@@ -235,56 +219,41 @@ function renderOverview() {
 
   let kpiHtml = '';
   if (d === 'month') {
+    const monthDabiao = DATA.stores.filter(s => s.mr >= 100).length;
     kpiHtml = `
       <div class="kpi-card"><div class="label">当月目标单量</div><div class="value blue">${fmt(o.month.targetOrders)}</div></div>
       <div class="kpi-card"><div class="label">当月实际单量</div><div class="value green">${fmt(o.month.actualOrders)}</div></div>
       <div class="kpi-card"><div class="label">当月达成率</div><div class="value amber">${pct(o.month.achieveRate)}</div></div>
       <div class="kpi-card"><div class="label">当月预估激励总额</div><div class="value rose">¥${fmt(o.month.totalIncentive)}</div></div>
-      <div class="kpi-card"><div class="label">门店数量</div><div class="value purple">${o.month.storeCount}</div></div>
+      <div class="kpi-card"><div class="label">达标门店数</div><div class="value purple">${monthDabiao} / ${o.month.storeCount}</div></div>
     `;
   } else {
     kpiHtml = `
       <div class="kpi-card"><div class="label">${dailyLabel} 目标单量</div><div class="value blue">${fmt(o.daily.targetOrders)}</div></div>
       <div class="kpi-card"><div class="label">${dailyLabel} 实际单量</div><div class="value green">${fmt(o.daily.actualOrders)}</div></div>
       <div class="kpi-card"><div class="label">${dailyLabel} 达成率</div><div class="value amber">${pct(o.daily.achieveRate)}</div></div>
-      <div class="kpi-card"><div class="label">${dailyLabel} 达标门店数</div><div class="value purple">${o.daily.qualifiedStores}</div></div>
+      <div class="kpi-card"><div class="label">${dailyLabel} 达标门店数</div><div class="value purple">${o.daily.qualifiedStores} / ${o.month.storeCount}</div></div>
     `;
   }
   document.getElementById('overviewKpi').innerHTML = kpiHtml;
 
-  // Chart 1: Region achieve rate
+  // Chart: Region incentive comparison
   const regions = DATA.regions;
   const rNames = regions.map(r => r.name);
-  const rRates = regions.map(r => d === 'month' ? r.month.rate : r.daily.rate);
   const rColors = regions.map(r => r.color);
+  const rIncentives = regions.map(r => r.month.incentive);
 
-  document.getElementById('overviewChart1Title').textContent = d === 'month' ? '各区域月度达成率' : '各区域当日达成率';
+  document.getElementById('overviewChart1Title').textContent = '各区域激励金对比';
   charts.overviewChart1.setOption({
-    tooltip: { trigger:'axis', formatter: p => p[0].name + '<br/>' + p[0].marker + ' 达成率: ' + p[0].value + '%' },
+    tooltip: { trigger:'axis', formatter: p => p[0].name + '<br/>' + p[0].marker + ' 激励金: ¥' + p[0].value.toLocaleString() },
     xAxis: { type:'category', data:rNames, axisLabel:{color:'#94a3b8'}, axisLine:{lineStyle:{color:'#334155'}} },
-    yAxis: { type:'value', axisLabel:{color:'#94a3b8', formatter:'{value}%'}, splitLine:{lineStyle:{color:'#1e293b'}} },
+    yAxis: { type:'value', axisLabel:{color:'#94a3b8', formatter: v => '¥' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)}, splitLine:{lineStyle:{color:'#1e293b'}} },
     series: [{
-      type:'bar', data: rRates.map((v,i) => ({value:v, itemStyle:{color:rColors[i]}})),
+      type:'bar', data: rIncentives.map((v,i) => ({value:v, itemStyle:{color:rColors[i]}})),
       barWidth:'40%',
-      label: { show:true, position:'top', color:'#e2e8f0', formatter:'{c}%', fontSize:12 }
+      label: { show:true, position:'top', color:'#e2e8f0', formatter: p => '¥' + p.value.toLocaleString(), fontSize:12 }
     }],
-    grid: { left:60, right:20, top:30, bottom:40 }
-  }, true);
-
-  // Chart 2: Target vs Actual
-  document.getElementById('overviewChart2Title').textContent = d === 'month' ? '各区域月度目标与实际' : '各区域当日目标与实际';
-  const rTargets = regions.map(r => d === 'month' ? r.month.target : Math.round(r.daily.target));
-  const rActuals = regions.map(r => d === 'month' ? r.month.actual : r.daily.actual);
-  charts.overviewChart2.setOption({
-    tooltip: { trigger:'axis' },
-    legend: { data:['目标','实际'], textStyle:{color:'#94a3b8'}, top:0 },
-    xAxis: { type:'category', data:rNames, axisLabel:{color:'#94a3b8'}, axisLine:{lineStyle:{color:'#334155'}} },
-    yAxis: { type:'value', axisLabel:{color:'#94a3b8'}, splitLine:{lineStyle:{color:'#1e293b'}} },
-    series: [
-      { name:'目标', type:'bar', data:rTargets, itemStyle:{color:'rgba(96,165,250,.4)'}, barGap:'20%' },
-      { name:'实际', type:'bar', data:rActuals, itemStyle:{color:'#3b82f6'} }
-    ],
-    grid: { left:60, right:20, top:40, bottom:40 }
+    grid: { left:80, right:20, top:30, bottom:40 }
   }, true);
 }
 
@@ -295,60 +264,24 @@ function renderRegion() {
   const m = DATA.meta;
   const dailyLabel = '当日（' + m.dailyDate + '）';
 
-  // KPI cards per region
+  // KPI cards per region with dabiao count
   let kpiHtml = '';
   regions.forEach(r => {
     const rd = d === 'month' ? r.month : r.daily;
     const rate = rd.rate;
+    const regionStores = DATA.stores.filter(s => s.region === r.name);
+    const dabiao = d === 'month'
+      ? regionStores.filter(s => s.mr >= 100).length
+      : regionStores.filter(s => s.da >= s.dt).length;
     kpiHtml += `
       <div class="kpi-card" style="border-top:3px solid ${r.color}">
         <div class="label">${r.name}（${r.storeCount}店）</div>
         <div class="value" style="color:${r.color}">${pct(rate)}</div>
-        <div class="sub">${d === 'month' ? '月目标' : '日目标'}: ${fmt(d === 'month' ? rd.target : Math.round(rd.target))} | 实际: ${fmt(rd.actual)}</div>
+        <div class="sub">${d === 'month' ? '月目标' : '日目标'}: ${fmt(d === 'month' ? rd.target : Math.round(rd.target))} | 实际: ${fmt(rd.actual)} | 达标: ${dabiao}店</div>
       </div>
     `;
   });
   document.getElementById('regionKpi').innerHTML = kpiHtml;
-
-  // Chart 1: Radar
-  const rNames = regions.map(r => r.name);
-  const maxRate = Math.max(...regions.map(r => d === 'month' ? r.month.rate : r.daily.rate), 10);
-  document.getElementById('regionChart1Title').textContent = d === 'month' ? '区域月度达成率雷达图' : '区域当日达成率雷达图';
-  charts.regionChart1.setOption({
-    tooltip: {},
-    radar: {
-      indicator: rNames.map(n => ({name:n, max: Math.ceil(maxRate * 1.3)})),
-      shape:'polygon',
-      axisName: { color:'#94a3b8', fontSize:12 },
-      splitArea: { areaStyle:{color:['rgba(30,41,59,.3)','rgba(30,41,59,.5)']} },
-      splitLine: { lineStyle:{color:'#334155'} },
-      axisLine: { lineStyle:{color:'#334155'} }
-    },
-    series: [{
-      type:'radar',
-      data: [{
-        value: regions.map(r => d === 'month' ? r.month.rate : r.daily.rate),
-        name:'达成率',
-        areaStyle: { color:'rgba(59,130,246,.2)' },
-        lineStyle: { color:'#3b82f6' },
-        itemStyle: { color:'#3b82f6' }
-      }]
-    }]
-  }, true);
-
-  // Chart 2: Incentive (month only meaningful)
-  document.getElementById('regionChart2Title').textContent = '区域激励金额分布';
-  const incentives = regions.map(r => r.month.incentive);
-  const total = incentives.reduce((a,b) => a+b, 0);
-  charts.regionChart2.setOption({
-    tooltip: { trigger:'item', formatter: p => p.name + '<br/>¥' + p.value.toLocaleString() + ' (' + p.percent + '%)' },
-    series: [{
-      type:'pie', radius:['40%','70%'],
-      data: regions.map((r,i) => ({value:r.month.incentive, name:r.name, itemStyle:{color:r.color}})),
-      label: { color:'#cbd5e1', formatter:'{b}\n¥{c}', fontSize:12 },
-      emphasis: { itemStyle:{shadowBlur:10, shadowColor:'rgba(0,0,0,.3)'} }
-    }]
-  }, true);
 }
 
 // ========== Section 3: Store Table ==========

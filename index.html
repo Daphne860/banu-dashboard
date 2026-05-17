@@ -229,7 +229,7 @@ function renderOverview() {
     `;
   } else {
     kpiHtml = `
-      <div class="kpi-card"><div class="label">${dailyLabel} 目标单量</div><div class="value blue">${fmt(o.daily.targetOrders)}</div></div>
+      <div class="kpi-card"><div class="label">${dailyLabel} 目标单量</div><div class="value blue">${fmt(Math.round(o.daily.targetOrders))}</div></div>
       <div class="kpi-card"><div class="label">${dailyLabel} 实际单量</div><div class="value green">${fmt(o.daily.actualOrders)}</div></div>
       <div class="kpi-card"><div class="label">${dailyLabel} 达成率</div><div class="value amber">${pct(o.daily.achieveRate)}</div></div>
       <div class="kpi-card"><div class="label">${dailyLabel} 达标门店数</div><div class="value purple">${o.daily.qualifiedStores} / ${o.month.storeCount}</div></div>

@@ -1,0 +1,6 @@
+.env
+node_modules/
+fetch_bi_data.js
+transform_bi_data.js
+store_id_mapping.json
+data/

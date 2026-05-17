@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>巴奴地级市扫码数据看板</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; min-height: 100vh; }
+.header { text-align:center; padding:24px 20px 8px; }
+.header h1 { font-size:28px; font-weight:700; background:linear-gradient(90deg,#60a5fa,#a78bfa,#f472b6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.header .subtitle { color:#94a3b8; font-size:13px; margin-top:6px; }
+.header .update-time { color:#64748b; font-size:12px; margin-top:4px; }
+.container { max-width:1400px; margin:0 auto; padding:0 20px 40px; }
+
+/* Section */
+.section { margin-top:28px; }
+.section-title { font-size:18px; font-weight:600; color:#f1f5f9; margin-bottom:16px; padding-left:12px; border-left:3px solid #3b82f6; }
+
+/* KPI Cards */
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:20px; }
+.kpi-card { background:rgba(30,41,59,.7); border:1px solid rgba(71,85,105,.4); border-radius:12px; padding:20px; text-align:center; backdrop-filter:blur(8px); }
+.kpi-card .label { font-size:12px; color:#94a3b8; margin-bottom:8px; }
+.kpi-card .value { font-size:28px; font-weight:700; }
+.kpi-card .value.blue { color:#60a5fa; }
+.kpi-card .value.green { color:#34d399; }
+.kpi-card .value.amber { color:#fbbf24; }
+.kpi-card .value.rose { color:#fb7185; }
+.kpi-card .value.purple { color:#a78bfa; }
+.kpi-card .sub { font-size:11px; color:#64748b; margin-top:4px; }
+
+/* Dimension Switch */
+.dim-switch { display:inline-flex; background:rgba(30,41,59,.8); border-radius:8px; overflow:hidden; border:1px solid rgba(71,85,105,.4); margin-bottom:16px; }
+.dim-btn { padding:8px 20px; font-size:13px; color:#94a3b8; cursor:pointer; border:none; background:transparent; transition:all .2s; }
+.dim-btn.active { background:#3b82f6; color:#fff; }
+
+/* Region Tabs */
+.region-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.region-tab { padding:6px 16px; border-radius:20px; font-size:13px; cursor:pointer; border:1px solid rgba(71,85,105,.4); background:rgba(30,41,59,.6); color:#94a3b8; transition:all .2s; }
+.region-tab.active { border-color:#3b82f6; color:#60a5fa; background:rgba(59,130,246,.1); }
+
+/* Chart Container */
+.chart-box { background:rgba(30,41,59,.5); border:1px solid rgba(71,85,105,.3); border-radius:12px; padding:16px; margin-bottom:20px; }
+.chart-box .chart-title { font-size:14px; color:#cbd5e1; margin-bottom:12px; font-weight:500; }
+.chart-wrap { width:100%; height:360px; }
+.chart-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:900px){ .chart-row { grid-template-columns:1fr; } }
+
+/* Table */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead th { background:rgba(30,41,59,.9); color:#94a3b8; font-weight:500; padding:10px 12px; text-align:left; position:sticky; top:0; white-space:nowrap; border-bottom:1px solid rgba(71,85,105,.4); }
+tbody td { padding:9px 12px; border-bottom:1px solid rgba(71,85,105,.2); white-space:nowrap; }
+tbody tr:hover { background:rgba(59,130,246,.06); }
+.rate-cell { font-weight:600; }
+.rate-high { color:#34d399; }
+.rate-mid { color:#fbbf24; }
+.rate-low { color:#f87171; }
+.region-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; color:#fff; }
+.incentive-cell { color:#fbbf24; font-weight:600; }
+.sort-btn { cursor:pointer; user-select:none; }
+.sort-btn:hover { color:#60a5fa; }
+.sort-btn .arrow { font-size:10px; margin-left:2px; }
+
+/* Loading */
+.loading { text-align:center; padding:80px 20px; color:#64748b; font-size:16px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="mainTitle">巴奴地级市扫码数据看板</h1>
+  <div class="subtitle" id="dateRange"></div>
+  <div class="update-time" id="updateTime"></div>
+</div>
+
+<div class="container">
+  <!-- Section 1: 整体概览 -->
+  <div class="section">
+    <div class="section-title">一、整体概览</div>
+    <div class="dim-switch" id="overviewDim">
+      <button class="dim-btn active" data-dim="month">当月累计</button>
+      <button class="dim-btn" data-dim="daily">当日</button>
+    </div>
+    <div id="overviewKpi" class="kpi-row"></div>
+    <div class="chart-box">
+      <div class="chart-title" id="overviewChart1Title">各区域激励金对比</div>
+      <div class="chart-wrap" id="overviewChart1"></div>
+    </div>
+  </div>
+
+  <!-- Section 2: 区域对比 -->
+  <div class="section">
+    <div class="section-title">二、区域对比分析</div>
+    <div class="dim-switch" id="regionDim">
+      <button class="dim-btn active" data-dim="month">当月累计</button>
+      <button class="dim-btn" data-dim="daily">当日</button>
+    </div>
+    <div id="regionKpi" class="kpi-row"></div>
+  </div>
+
+  <!-- Section 3: 门店明细 -->
+  <div class="section">
+    <div class="section-title">三、门店明细</div>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+      <div class="region-tabs" id="storeTabs"></div>
+    </div>
+    <div class="dim-switch" id="storeDim">
+      <button class="dim-btn active" data-dim="month">当月累计</button>
+      <button class="dim-btn" data-dim="daily">当日</button>
+    </div>
+    <div class="chart-box">
+      <div class="table-wrap" id="storeTableWrap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== Global State ==========
+let DATA = null;
+let overviewDim = 'month';
+let regionDim = 'month';
+let storeDim = 'month';
+let storeRegion = '全部';
+let storeSortKey = 'mr';
+let storeSortAsc = false;
+
+// ECharts instances
+let charts = {};
+
+// ========== Load Data ==========
+async function loadData() {
+  try {
+    const resp = await fetch('data.json?t=' + Date.now());
+    DATA = await resp.json();
+    initDashboard();
+  } catch(e) {
+    document.querySelector('.container').innerHTML = '<div class="loading">数据加载失败，请检查 data.json 文件是否存在。</div>';
+    console.error(e);
+  }
+}
+
+// ========== Init ==========
+function initDashboard() {
+  const m = DATA.meta;
+  document.getElementById('mainTitle').textContent = m.title;
+  document.getElementById('dateRange').textContent = m.dataStart + ' ~ ' + m.dataEnd + '（已过 ' + m.elapsedDays + ' / ' + m.monthDays + ' 天）';
+  document.getElementById('updateTime').textContent = '数据更新时间：' + m.updateTime;
+
+  // Init charts
+  ['overviewChart1'].forEach(id => {
+    charts[id] = echarts.init(document.getElementById(id));
+  });
+
+  // Bind dim switches
+  bindDimSwitch('overviewDim', v => { overviewDim = v; renderOverview(); });
+  bindDimSwitch('regionDim', v => { regionDim = v; renderRegion(); });
+  bindDimSwitch('storeDim', v => { storeDim = v; renderStoreTable(); });
+
+  // Build region tabs
+  buildRegionTabs();
+
+  // Render all
+  renderOverview();
+  renderRegion();
+  renderStoreTable();
+
+  // Resize
+  window.addEventListener('resize', () => {
+    Object.values(charts).forEach(c => c.resize());
+  });
+}
+
+// ========== Dim Switch ==========
+function bindDimSwitch(containerId, callback) {
+  const el = document.getElementById(containerId);
+  el.querySelectorAll('.dim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      el.querySelectorAll('.dim-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      callback(btn.dataset.dim);
+    });
+  });
+}
+
+// ========== Region Tabs ==========
+function buildRegionTabs() {
+  const wrap = document.getElementById('storeTabs');
+  const regions = ['全部', ...DATA.regions.map(r => r.name + '(' + r.storeCount + ')')];
+  wrap.innerHTML = regions.map((r, i) =>
+    '<div class="region-tab' + (i === 0 ? ' active' : '') + '" data-region="' + (i === 0 ? '全部' : DATA.regions[i-1].name) + '">' + r + '</div>'
+  ).join('');
+  wrap.querySelectorAll('.region-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      wrap.querySelectorAll('.region-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      storeRegion = tab.dataset.region;
+      renderStoreTable();
+    });
+  });
+}
+
+// ========== Helpers ==========
+function fmt(n) { return n == null ? '-' : n.toLocaleString(); }
+function pct(n) { return n == null ? '-' : n.toFixed(2) + '%'; }
+function rateClass(r) { return r >= 80 ? 'rate-high' : r >= 40 ? 'rate-mid' : 'rate-low'; }
+function regionColor(name) {
+  const r = DATA.regions.find(x => x.name === name);
+  return r ? r.color : '#64748b';
+}
+
+// ========== Section 1: Overview ==========
+function renderOverview() {
+  const d = overviewDim;
+  const o = DATA.overview;
+  const m = DATA.meta;
+  const dailyLabel = '当日（' + m.dailyDate + '）';
+
+  let kpiHtml = '';
+  if (d === 'month') {
+    const monthDabiao = DATA.stores.filter(s => s.mr >= 100).length;
+    kpiHtml = `
+      <div class="kpi-card"><div class="label">当月目标单量</div><div class="value blue">${fmt(o.month.targetOrders)}</div></div>
+      <div class="kpi-card"><div class="label">当月实际单量</div><div class="value green">${fmt(o.month.actualOrders)}</div></div>
+      <div class="kpi-card"><div class="label">当月达成率</div><div class="value amber">${pct(o.month.achieveRate)}</div></div>
+      <div class="kpi-card"><div class="label">当月预估激励总额</div><div class="value rose">¥${fmt(o.month.totalIncentive)}</div></div>
+      <div class="kpi-card"><div class="label">达标门店数</div><div class="value purple">${monthDabiao} / ${o.month.storeCount}</div></div>
+    `;
+  } else {
+    kpiHtml = `
+      <div class="kpi-card"><div class="label">${dailyLabel} 目标单量</div><div class="value blue">${fmt(o.daily.targetOrders)}</div></div>
+      <div class="kpi-card"><div class="label">${dailyLabel} 实际单量</div><div class="value green">${fmt(o.daily.actualOrders)}</div></div>
+      <div class="kpi-card"><div class="label">${dailyLabel} 达成率</div><div class="value amber">${pct(o.daily.achieveRate)}</div></div>
+      <div class="kpi-card"><div class="label">${dailyLabel} 达标门店数</div><div class="value purple">${o.daily.qualifiedStores} / ${o.month.storeCount}</div></div>
+    `;
+  }
+  document.getElementById('overviewKpi').innerHTML = kpiHtml;
+
+  // Chart: Region incentive comparison
+  const regions = DATA.regions;
+  const rNames = regions.map(r => r.name);
+  const rColors = regions.map(r => r.color);
+  const rIncentives = regions.map(r => r.month.incentive);
+
+  document.getElementById('overviewChart1Title').textContent = '各区域激励金对比';
+  charts.overviewChart1.setOption({
+    tooltip: { trigger:'axis', formatter: p => p[0].name + '<br/>' + p[0].marker + ' 激励金: ¥' + p[0].value.toLocaleString() },
+    xAxis: { type:'category', data:rNames, axisLabel:{color:'#94a3b8'}, axisLine:{lineStyle:{color:'#334155'}} },
+    yAxis: { type:'value', axisLabel:{color:'#94a3b8', formatter: v => '¥' + (v >= 1000 ? (v/1000).toFixed(0) + 'k' : v)}, splitLine:{lineStyle:{color:'#1e293b'}} },
+    series: [{
+      type:'bar', data: rIncentives.map((v,i) => ({value:v, itemStyle:{color:rColors[i]}})),
+      barWidth:'40%',
+      label: { show:true, position:'top', color:'#e2e8f0', formatter: p => '¥' + p.value.toLocaleString(), fontSize:12 }
+    }],
+    grid: { left:80, right:20, top:30, bottom:40 }
+  }, true);
+}
+
+// ========== Section 2: Region ==========
+function renderRegion() {
+  const d = regionDim;
+  const regions = DATA.regions;
+  const m = DATA.meta;
+  const dailyLabel = '当日（' + m.dailyDate + '）';
+
+  // KPI cards per region with dabiao count
+  let kpiHtml = '';
+  regions.forEach(r => {
+    const rd = d === 'month' ? r.month : r.daily;
+    const rate = rd.rate;
+    const regionStores = DATA.stores.filter(s => s.region === r.name);
+    const dabiao = d === 'month'
+      ? regionStores.filter(s => s.mr >= 100).length
+      : regionStores.filter(s => s.da >= s.dt).length;
+    kpiHtml += `
+      <div class="kpi-card" style="border-top:3px solid ${r.color}">
+        <div class="label">${r.name}（${r.storeCount}店）</div>
+        <div class="value" style="color:${r.color}">${pct(rate)}</div>
+        <div class="sub">${d === 'month' ? '月目标' : '日目标'}: ${fmt(d === 'month' ? rd.target : Math.round(rd.target))} | 实际: ${fmt(rd.actual)} | 达标: ${dabiao}店</div>
+      </div>
+    `;
+  });
+  document.getElementById('regionKpi').innerHTML = kpiHtml;
+}
+
+// ========== Section 3: Store Table ==========
+function renderStoreTable() {
+  const d = storeDim;
+  const m = DATA.meta;
+  const dailyLabel = m.dailyDate;
+  let stores = DATA.stores;
+
+  // Filter by region
+  if (storeRegion !== '全部') {
+    stores = stores.filter(s => s.region === storeRegion);
+  }
+
+  // Sort
+  stores = [...stores].sort((a, b) => {
+    let va = a[storeSortKey], vb = b[storeSortKey];
+    if (typeof va === 'string') { va = va === '-' ? -1 : 0; vb = vb === '-' ? -1 : 0; }
+    return storeSortAsc ? va - vb : vb - va;
+  });
+
+  const sortIcon = (key) => {
+    const active = storeSortKey === key;
+    return ' <span class="arrow">' + (active ? (storeSortAsc ? '▲' : '▼') : '↕') + '</span>';
+  };
+
+  let html = '<table><thead><tr>';
+  html += '<th>排名</th><th>门店名称</th><th>区域</th><th>城市</th>';
+
+  if (d === 'month') {
+    html += `<th class="sort-btn" data-key="mt">月目标${sortIcon('mt')}</th>`;
+    html += `<th class="sort-btn" data-key="ma">月实际${sortIcon('ma')}</th>`;
+    html += `<th class="sort-btn" data-key="mr">月达成率${sortIcon('mr')}</th>`;
+    html += `<th class="sort-btn" data-key="davg">日均单量${sortIcon('davg')}</th>`;
+    html += `<th class="sort-btn" data-key="dabiao">达标激励${sortIcon('dabiao')}</th>`;
+    html += '<th>优秀激励档位</th>';
+    html += `<th class="sort-btn" data-key="ym">优秀激励${sortIcon('ym')}</th>`;
+    html += `<th class="sort-btn" data-key="tm">预估总激励${sortIcon('tm')}</th>`;
+  } else {
+    html += `<th class="sort-btn" data-key="dt">当日目标(${dailyLabel})${sortIcon('dt')}</th>`;
+    html += `<th class="sort-btn" data-key="da">当日实际${sortIcon('da')}</th>`;
+    html += `<th class="sort-btn" data-key="dr">当日达成率${sortIcon('dr')}</th>`;
+    html += `<th class="sort-btn" data-key="mt">月目标${sortIcon('mt')}</th>`;
+    html += `<th class="sort-btn" data-key="ma">月累计${sortIcon('ma')}</th>`;
+    html += `<th class="sort-btn" data-key="mr">月达成率${sortIcon('mr')}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  stores.forEach((s, i) => {
+    const rc = regionColor(s.region);
+    html += '<tr>';
+    html += `<td>${i + 1}</td>`;
+    html += `<td>${s.name}</td>`;
+    html += `<td><span class="region-badge" style="background:${rc}">${s.region}</span></td>`;
+    html += `<td>${s.city}</td>`;
+
+    if (d === 'month') {
+      html += `<td>${fmt(s.mt)}</td>`;
+      html += `<td>${fmt(s.ma)}</td>`;
+      html += `<td class="rate-cell ${rateClass(s.mr)}">${pct(s.mr)}</td>`;
+      html += `<td>${s.davg}</td>`;
+      html += `<td class="incentive-cell">${s.dabiao > 0 ? '¥' + fmt(s.dabiao) : '-'}</td>`;
+      html += `<td>${s.yl}</td>`;
+      html += `<td class="incentive-cell">${s.ym > 0 ? '¥' + fmt(s.ym) : '-'}</td>`;
+      html += `<td class="incentive-cell">${s.tm > 0 ? '¥' + fmt(s.tm) : '-'}</td>`;
+    } else {
+      html += `<td>${s.dt}</td>`;
+      html += `<td>${fmt(s.da)}</td>`;
+      html += `<td class="rate-cell ${rateClass(s.dr)}">${pct(s.dr)}</td>`;
+      html += `<td>${fmt(s.mt)}</td>`;
+      html += `<td>${fmt(s.ma)}</td>`;
+      html += `<td class="rate-cell ${rateClass(s.mr)}">${pct(s.mr)}</td>`;
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('storeTableWrap').innerHTML = html;
+
+  // Bind sort
+  document.querySelectorAll('#storeTableWrap .sort-btn').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (storeSortKey === key) {
+        storeSortAsc = !storeSortAsc;
+      } else {
+        storeSortKey = key;
+        storeSortAsc = false;
+      }
+      renderStoreTable();
+    });
+  });
+}
+
+// ========== Start ==========
+loadData();
+</script>
+</body>
+</html>

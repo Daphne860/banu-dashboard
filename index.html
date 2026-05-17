@@ -80,8 +80,8 @@ tbody tr:hover { background:rgba(59,130,246,.06); }
   <div class="section">
     <div class="section-title">一、整体概览</div>
     <div class="dim-switch" id="overviewDim">
-      <button class="dim-btn active" data-dim="month">当月累计</button>
-      <button class="dim-btn" data-dim="daily">当日</button>
+      <button class="dim-btn" data-dim="month">当月累计</button>
+      <button class="dim-btn active" data-dim="daily">当日</button>
     </div>
     <div id="overviewKpi" class="kpi-row"></div>
     <div class="chart-box">
@@ -94,8 +94,8 @@ tbody tr:hover { background:rgba(59,130,246,.06); }
   <div class="section">
     <div class="section-title">二、区域对比分析</div>
     <div class="dim-switch" id="regionDim">
-      <button class="dim-btn active" data-dim="month">当月累计</button>
-      <button class="dim-btn" data-dim="daily">当日</button>
+      <button class="dim-btn" data-dim="month">当月累计</button>
+      <button class="dim-btn active" data-dim="daily">当日</button>
     </div>
     <div id="regionKpi" class="kpi-row"></div>
   </div>
@@ -107,8 +107,8 @@ tbody tr:hover { background:rgba(59,130,246,.06); }
       <div class="region-tabs" id="storeTabs"></div>
     </div>
     <div class="dim-switch" id="storeDim">
-      <button class="dim-btn active" data-dim="month">当月累计</button>
-      <button class="dim-btn" data-dim="daily">当日</button>
+      <button class="dim-btn" data-dim="month">当月累计</button>
+      <button class="dim-btn active" data-dim="daily">当日</button>
     </div>
     <div class="chart-box">
       <div class="table-wrap" id="storeTableWrap"></div>
@@ -119,11 +119,11 @@ tbody tr:hover { background:rgba(59,130,246,.06); }
 <script>
 // ========== Global State ==========
 let DATA = null;
-let overviewDim = 'month';
-let regionDim = 'month';
-let storeDim = 'month';
+let overviewDim = 'daily';
+let regionDim = 'daily';
+let storeDim = 'daily';
 let storeRegion = '全部';
-let storeSortKey = 'mr';
+let storeSortKey = 'dr';
 let storeSortAsc = false;
 
 // ECharts instances

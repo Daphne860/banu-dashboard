@@ -14,7 +14,7 @@
       "targetOrders": 120562,
       "actualOrders": 8580,
       "achieveRate": 7.12,
-      "totalIncentive": 2466.3,
+      "totalIncentive": 702,
       "storeCount": 62,
       "daysPassed": 16,
       "daysInMonth": 31
@@ -36,7 +36,7 @@
         "target": 52565,
         "actual": 1487,
         "rate": 2.83,
-        "incentive": 2241.9
+        "incentive": 702
       },
       "daily": {
         "target": 1695.7,
@@ -52,7 +52,7 @@
         "target": 28246,
         "actual": 640,
         "rate": 2.27,
-        "incentive": 224.4
+        "incentive": 0
       },
       "daily": {
         "target": 911.2,
@@ -108,7 +108,7 @@
       "dabiao": 0,
       "yl": "-",
       "ym": 590.4,
-      "tm": 2034
+      "tm": 702
     },
     {
       "name": "郑州曼哈顿店",
@@ -124,7 +124,7 @@
       "dabiao": 0,
       "yl": "-",
       "ym": 0,
-      "tm": 207.9
+      "tm": 0
     },
     {
       "name": "驻马店玖隆茂店",
@@ -156,7 +156,7 @@
       "dabiao": 0,
       "yl": "-",
       "ym": 0,
-      "tm": 224.4
+      "tm": 0
     },
     {
       "name": "郑州国贸360店",
